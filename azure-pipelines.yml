@@ -30,10 +30,25 @@ steps:
 - script: |
     go version
     go get -v -t -d ./...
+    go get "github.com/StackExchange/wmi"
+    go get "github.com/go-ole/go-ole"
     if [ -f Gopkg.toml ]; then
         curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
         dep ensure
     fi
-    go build -v .
+    GOOS=darwin go build -v -o ProcessThrottler .
+    GOOS=windows go build -v -o ProcessThrottler.exe .
   workingDirectory: '$(modulePath)'
-  displayName: 'Get dependencies, then build'
+  displayName: 'Get dependencies, then build OSX and WIN versions'
+
+- task: PublishPipelineArtifact@1
+  inputs:
+    targetPath: '$(modulePath)/ProcessThrottler'
+    artifact: 'ProcessThrottlerOSX'
+    publishLocation: 'pipeline'
+
+- task: PublishPipelineArtifact@1
+  inputs:
+    targetPath: '$(modulePath)/ProcessThrottler.exe'
+    artifact: 'ProcessThrottlerWIN'
+    publishLocation: 'pipeline'
