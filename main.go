@@ -2,7 +2,11 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/shirou/gopsutil/process"
@@ -34,10 +38,30 @@ func main() {
 		}
 		return
 	}
-	for true {
-		p.Suspend()
-		time.Sleep(time.Duration(10*(100-(*cpu))) * time.Microsecond)
-		p.Resume()
-		time.Sleep(time.Duration(10*(*cpu)) * time.Microsecond)
-	}
+
+	sigs := make(chan os.Signal, 1)
+	done := make(chan bool, 1)
+
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		sig := <-sigs
+		fmt.Println()
+		fmt.Println(sig)
+		done <- true
+	}()
+
+	go func() {
+		for true {
+			p.Suspend()
+			time.Sleep(time.Duration(10*(100-(*cpu))) * time.Microsecond)
+			p.Resume()
+			time.Sleep(time.Duration(10*(*cpu)) * time.Microsecond)
+		}
+	}()
+
+	fmt.Println("Send SIGINT to remove limit")
+	<-done
+	p.Resume()
+	fmt.Println("Exiting and removing CPU limit")
 }
