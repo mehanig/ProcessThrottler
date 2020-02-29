@@ -37,10 +37,6 @@ func main() {
 		procPids = append(procPids, *pidArg)
 	}
 
-	if *cpu >= 100 {
-		return
-	}
-
 	var processes []*process.Process
 
 	for _, pid := range procPids {
@@ -53,11 +49,33 @@ func main() {
 		processes = append(processes, p)
 	}
 
-	if *cpu <= 0 {
+	// To support resuming stopped processes, when we set 100% cpu usage,
+	// We still need to iterate over PIDs and try to resuming them
+	if *cpu >= 100 {
+		for _, proc := range processes {
+			resumeResult := proc.Resume()
+			if resumeResult != nil {
+				log.Fatal(resumeResult)
+			}
+		}
+		return
+	}
+
+	if *cpu < 0 {
 		for _, proc := range processes {
 			killResult := proc.Kill()
 			if killResult != nil {
 				log.Fatal(killResult)
+			}
+		}
+		return
+	}
+
+	if *cpu == 0 {
+		for _, proc := range processes {
+			suspendResult := proc.Suspend()
+			if suspendResult != nil {
+				log.Fatal(suspendResult)
 			}
 		}
 		return
