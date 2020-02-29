@@ -1,7 +1,7 @@
 # ProcessThrottler
 
 It's a simple CPU throttler.
-It accepts 2 params:
+It accepts 3 params:
 
 - `-pid`: the pid of process to throttle
 - `-pids`: Comma separated list of PIDs passed as JSON string array: `-pids='[1,2,3,4]'`
