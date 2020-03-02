@@ -3,8 +3,12 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"syscall"
+	"time"
+
+	"github.com/shirou/gopsutil/process"
 )
 
 // BOOL WINAPI NtSuspendProcess
@@ -31,11 +35,32 @@ func NtResumeProcess(hProcess syscall.Handle) bool {
 	return ret == 0
 }
 
-func OpenProcess(processId int) (h syscall.Handle, e error) {
+func OpenProcess(processId int32) (h syscall.Handle, e error) {
 	_PROCESS_ALL_ACCESS := syscall.STANDARD_RIGHTS_REQUIRED | syscall.SYNCHRONIZE | 0xfff
 	ph, err := syscall.OpenProcess(uint32(_PROCESS_ALL_ACCESS), false, uint32(processId))
 	if err != nil {
 		log.Fatal(err)
 	}
 	return ph, err
+}
+
+func throttle(processes []*process.Process, cpu int) {
+	for _, proc := range processes {
+		go func(proc *process.Process) {
+			pid := proc.Pid
+			handle, err := OpenProcess(int32(pid))
+			if handle != 0 {
+				for true {
+					NtSuspendProcess(handle)
+					time.Sleep(time.Duration(100*(100-cpu)) * time.Microsecond)
+					NtResumeProcess(handle)
+					time.Sleep(time.Duration(100*cpu) * time.Microsecond)
+				}
+			} else {
+				fmt.Println("Error")
+				log.Fatal(err)
+			}
+		}(proc)
+
+	}
 }
