@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -81,15 +82,35 @@ func main() {
 		return
 	}
 
-	for _, p := range processes {
-		go func(proc *process.Process) {
-			for true {
-				proc.Suspend()
-				time.Sleep(time.Duration(10*(100-(*cpu))) * time.Microsecond)
-				proc.Resume()
-				time.Sleep(time.Duration(10*(*cpu)) * time.Microsecond)
-			}
-		}(p)
+	if runtime.GOOS == "windows" {
+		for _, pid := range procPids {
+			go func(procPid int) {
+				handle, err := OpenProcess(procPid)
+				if handle != 0 {
+					for true {
+						NtSuspendProcess(handle)
+						time.Sleep(time.Duration(100*(100-(*cpu))) * time.Microsecond)
+						NtResumeProcess(handle)
+						time.Sleep(time.Duration(100*(*cpu)) * time.Microsecond)
+					}
+				} else {
+					fmt.Println("Error")
+					log.Fatal(err)
+				}
+			}(pid)
+
+		}
+	} else {
+		for _, p := range processes {
+			go func(proc *process.Process) {
+				for true {
+					proc.Suspend()
+					time.Sleep(time.Duration(10*(100-(*cpu))) * time.Microsecond)
+					proc.Resume()
+					time.Sleep(time.Duration(10*(*cpu)) * time.Microsecond)
+				}
+			}(p)
+		}
 	}
 
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
