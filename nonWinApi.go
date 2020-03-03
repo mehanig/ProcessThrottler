@@ -20,3 +20,9 @@ func throttle(processes []*process.Process, cpu int) {
 		}(p)
 	}
 }
+
+func resumeSuspended(processes []*process.Process) {
+	for _, proc := range processes {
+		proc.Resume()
+	}
+}

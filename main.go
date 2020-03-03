@@ -94,9 +94,7 @@ func main() {
 	fmt.Println("Send SIGINT to remove limit")
 	<-done
 
-	for _, proc := range processes {
-		proc.Resume()
-	}
+	resumeSuspended(processes)
 
 	fmt.Println("Exiting and removing CPU limit")
 }

@@ -57,10 +57,21 @@ func throttle(processes []*process.Process, cpu int) {
 					time.Sleep(time.Duration(100*cpu) * time.Microsecond)
 				}
 			} else {
-				fmt.Println("Error")
+				fmt.Println("Handle error")
 				log.Fatal(err)
 			}
 		}(proc)
+	}
+}
 
+func resumeSuspended(processes []*process.Process) {
+	for _, proc := range processes {
+		go func(proc *process.Process) {
+			pid := proc.Pid
+			handle, _ := OpenProcess(int32(pid))
+			if handle != 0 {
+				NtResumeProcess(handle)
+			}
+		}(proc)
 	}
 }
