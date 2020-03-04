@@ -48,15 +48,8 @@ func main() {
 		processes = append(processes, p)
 	}
 
-	// To support resuming stopped processes, when we set 100% cpu usage,
-	// We still need to iterate over PIDs and try to resuming them
 	if *cpu >= 100 {
-		for _, proc := range processes {
-			resumeResult := proc.Resume()
-			if resumeResult != nil {
-				log.Fatal(resumeResult)
-			}
-		}
+		resumeSuspended(processes)
 		return
 	}
 
