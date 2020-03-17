@@ -44,7 +44,7 @@ func throttle(processes []*process.Process, cpu int) {
 		case <-gather:
 		}
 	}
-	os.Exit(1)
+	os.Exit(0)
 }
 
 func resumeSuspended(processes []*process.Process) {
