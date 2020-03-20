@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"syscall"
 	"time"
 
@@ -45,23 +46,48 @@ func OpenProcess(processId int32) (h syscall.Handle, e error) {
 }
 
 func throttle(processes []*process.Process, cpu int) {
+	gather := make(chan bool, len(processes))
 	for _, proc := range processes {
+		stopChan := make(chan bool, 1)
 		go func(proc *process.Process) {
 			pid := proc.Pid
 			handle, err := OpenProcess(int32(pid))
-			if handle != 0 {
-				for true {
-					NtSuspendProcess(handle)
-					time.Sleep(time.Duration(100*(100-cpu)) * time.Microsecond)
-					NtResumeProcess(handle)
-					time.Sleep(time.Duration(100*cpu) * time.Microsecond)
+			for {
+				select {
+				case <-stopChannel:
+					break
+				default:
+					if handle != 0 {
+						NtSuspendProcess(handle)
+						time.Sleep(time.Duration(100*(100-cpu)) * time.Microsecond)
+						NtResumeProcess(handle)
+						time.Sleep(time.Duration(100*cpu) * time.Microsecond)
+					} else {
+						fmt.Println("Handle error")
+						log.Fatal(err)
+					}
 				}
-			} else {
-				fmt.Println("Handle error")
-				log.Fatal(err)
 			}
-		}(proc)
+		}(proc, stopChan)
+
+		go func(proc *process.Process, stopChannel chan bool) {
+			for true {
+				time.Sleep(time.Duration(2) * time.Second)
+				handle, err := OpenProcess(int32(pid))
+				if err != nil {
+					stopChannel <- true
+					gather <- true
+				}
+			}
+		}(p, stopChan)
 	}
+
+	for range processes {
+		select {
+		case <-gather:
+		}
+	}
+	os.Exit(0)
 }
 
 func resumeSuspended(processes []*process.Process) {
