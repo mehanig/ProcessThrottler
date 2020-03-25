@@ -49,7 +49,7 @@ func throttle(processes []*process.Process, cpu int) {
 	gather := make(chan bool, len(processes))
 	for _, proc := range processes {
 		stopChan := make(chan bool, 1)
-		go func(proc *process.Process) {
+		go func(proc *process.Process, stopChannel chan bool) {
 			pid := proc.Pid
 			handle, err := OpenProcess(int32(pid))
 			for {
@@ -73,13 +73,13 @@ func throttle(processes []*process.Process, cpu int) {
 		go func(proc *process.Process, stopChannel chan bool) {
 			for true {
 				time.Sleep(time.Duration(2) * time.Second)
-				handle, err := OpenProcess(int32(pid))
+				_, err := OpenProcess(int32(proc.Pid))
 				if err != nil {
 					stopChannel <- true
 					gather <- true
 				}
 			}
-		}(p, stopChan)
+		}(proc, stopChan)
 	}
 
 	for range processes {
