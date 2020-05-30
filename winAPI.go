@@ -102,7 +102,7 @@ func resumeSuspended(processes []*process.Process) {
 	}
 }
 
-func suspendProceses(processes []*process.Process) {
+func suspendProcesses(processes []*process.Process) {
 	for _, proc := range processes {
 		go func(proc *process.Process) {
 			pid := proc.Pid
