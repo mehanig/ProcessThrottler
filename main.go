@@ -53,21 +53,16 @@ func main() {
 		return
 	}
 
+	if *cpu == 0 {
+		suspendProcesses(processes)
+		return
+	}
+
 	if *cpu < 0 {
 		for _, proc := range processes {
 			killResult := proc.Kill()
 			if killResult != nil {
 				log.Fatal(killResult)
-			}
-		}
-		return
-	}
-
-	if *cpu == 0 {
-		for _, proc := range processes {
-			suspendResult := proc.Suspend()
-			if suspendResult != nil {
-				log.Fatal(suspendResult)
 			}
 		}
 		return

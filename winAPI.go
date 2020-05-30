@@ -101,3 +101,15 @@ func resumeSuspended(processes []*process.Process) {
 		}(proc)
 	}
 }
+
+func suspendProceses(processes []*process.Process) {
+	for _, proc := range processes {
+		go func(proc *process.Process) {
+			pid := proc.Pid
+			handle, _ := OpenProcess(int32(pid))
+			if handle != 0 {
+				NtSuspendProcess(handle)
+			}
+		}(proc)
+	}
+}

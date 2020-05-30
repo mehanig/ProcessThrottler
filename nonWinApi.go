@@ -3,6 +3,7 @@
 package main
 
 import (
+	"log"
 	"os"
 	"time"
 
@@ -45,6 +46,15 @@ func throttle(processes []*process.Process, cpu int) {
 		}
 	}
 	os.Exit(0)
+}
+
+func suspendProcesses(processes []*process.Process) {
+	for _, proc := range processes {
+		suspendResult := proc.Suspend()
+		if suspendResult != nil {
+			log.Fatal(suspendResult)
+		}
+	}
 }
 
 func resumeSuspended(processes []*process.Process) {
