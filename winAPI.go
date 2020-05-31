@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 	"syscall"
 	"time"
 
@@ -91,25 +92,35 @@ func throttle(processes []*process.Process, cpu int) {
 }
 
 func resumeSuspended(processes []*process.Process) {
+	var wg sync.WaitGroup
+	wg.Add(len(processes))
 	for _, proc := range processes {
 		go func(proc *process.Process) {
+			defer wg.Done()
 			pid := proc.Pid
 			handle, _ := OpenProcess(int32(pid))
 			if handle != 0 {
+				log.Println("Resumed")
 				NtResumeProcess(handle)
 			}
 		}(proc)
 	}
+	wg.Wait()
 }
 
 func suspendProcesses(processes []*process.Process) {
+	var wg sync.WaitGroup
+	wg.Add(len(processes))
 	for _, proc := range processes {
 		go func(proc *process.Process) {
+			defer wg.Done()
 			pid := proc.Pid
 			handle, _ := OpenProcess(int32(pid))
 			if handle != 0 {
+				log.Println("Paused")
 				NtSuspendProcess(handle)
 			}
 		}(proc)
 	}
+	wg.Wait()
 }

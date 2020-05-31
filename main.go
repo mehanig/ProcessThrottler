@@ -51,38 +51,35 @@ func main() {
 	if *cpu >= 100 {
 		resumeSuspended(processes)
 		return
-	}
-
-	if *cpu == 0 {
+	} else if *cpu == 0 {
 		suspendProcesses(processes)
 		return
-	}
-
-	if *cpu < 0 {
+	} else if *cpu < 0 {
 		for _, proc := range processes {
 			killResult := proc.Kill()
 			if killResult != nil {
-				log.Fatal(killResult)
+				log.Println(killResult)
 			}
 		}
 		return
+	} else {
+
+		throttle(processes, *cpu)
+
+		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+		go func() {
+			sig := <-sigs
+			fmt.Println()
+			fmt.Println(sig)
+			done <- true
+		}()
+
+		fmt.Println("Send SIGINT to remove limit")
+		<-done
+
+		resumeSuspended(processes)
+
+		fmt.Println("Exiting and removing CPU limit")
 	}
-
-	throttle(processes, *cpu)
-
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-
-	go func() {
-		sig := <-sigs
-		fmt.Println()
-		fmt.Println(sig)
-		done <- true
-	}()
-
-	fmt.Println("Send SIGINT to remove limit")
-	<-done
-
-	resumeSuspended(processes)
-
-	fmt.Println("Exiting and removing CPU limit")
 }
